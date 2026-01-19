@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>성과 분석 - Stock Hunter</title>
+    <style>
+        :root {
+            --bg-dark: #0a0f1a;
+            --bg-card: #111827;
+            --bg-card-hover: #1f2937;
+            --accent: #10b981;
+            --accent-secondary: #3b82f6;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border: #374151;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0a0f1a 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card h3 {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-card .value.positive {
+            color: var(--accent);
+        }
+
+        .stat-card .value.negative {
+            color: var(--accent-danger);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg-card-hover);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-card-hover);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+            transition: width 0.3s;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🎯</div>
+            <h1>Stock Hunter</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="/ex_app/">대시보드</a>
+            <a href="/ex_app/predictions">예측 기록</a>
+            <a href="/ex_app/history" class="active">성과 분석</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <h2 class="page-title">📊 성과 분석</h2>
+
+        {% if daily_stats %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>최근 30일 평균 적중률</h3>
+                {% set total = daily_stats|sum(attribute='total_picks') %}
+                {% set success = daily_stats|sum(attribute='successful_picks') %}
+                <div
+                    class="value {% if total > 0 and (success/total*100) >= 50 %}positive{% else %}negative{% endif %}">
+                    {% if total > 0 %}{{ "%.1f"|format(success/total*100) }}%{% else %}0%{% endif %}
+                </div>
+                <div class="progress-bar" style="margin-top: 0.5rem;">
+                    <div class="progress-fill"
+                        style="width: {% if total > 0 %}{{ success/total*100 }}%{% else %}0%{% endif %};"></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>최고 일일 수익률</h3>
+                <div class="value positive">
+                    {% set best = daily_stats|map(attribute='avg_gain_pct')|select('defined')|max %}
+                    {{ "%.2f"|format(best) if best else '0' }}%
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>총 예측 수</h3>
+                <div class="value">{{ total }}</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 1rem;">일별 성과</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>날짜</th>
+                    <th>예측 수</th>
+                    <th>성공</th>
+                    <th>적중률</th>
+                    <th>평균 수익률</th>
+                    <th>최고 종목</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in daily_stats %}
+                <tr>
+                    <td>{{ stat.stat_date.strftime('%Y-%m-%d') if stat.stat_date else '-' }}</td>
+                    <td>{{ stat.total_picks }}</td>
+                    <td>{{ stat.successful_picks }}</td>
+                    <td>
+                        {% if stat.total_picks > 0 %}
+                        {{ "%.1f"|format(stat.successful_picks / stat.total_picks * 100) }}%
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td class="{% if stat.avg_gain_pct and stat.avg_gain_pct > 0 %}positive{% elif stat.avg_gain_pct %}negative{% endif %}"
+                        style="color: {% if stat.avg_gain_pct and stat.avg_gain_pct > 0 %}var(--accent){% elif stat.avg_gain_pct %}var(--accent-danger){% else %}inherit{% endif %}">
+                        {% if stat.avg_gain_pct %}{{ "%.2f"|format(stat.avg_gain_pct) }}%{% else %}-{% endif %}
+                    </td>
+                    <td>
+                        {% if stat.best_pick_symbol %}
+                        <strong>{{ stat.best_pick_symbol }}</strong>
+                        <span style="color: var(--accent);">(+{{ "%.1f"|format(stat.best_pick_gain) if
+                            stat.best_pick_gain else 0 }}%)</span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>아직 성과 데이터가 없습니다.</p>
+            <p style="font-size: 0.875rem; margin-top: 0.5rem;">예측을 시작하면 여기에 통계가 표시됩니다.</p>
+        </div>
+        {% endif %}
+    </main>
+</body>
+
+</html>
